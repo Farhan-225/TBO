@@ -1,45 +1,47 @@
 package org.example;
 
 import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.awt.event.KeyEvent;
 
 public class MainUI extends JFrame {
 
     private JTextArea inputArea;
-    private JTextArea outputArea;
+    private JTable table;
+    private DefaultTableModel tableModel;
+    private JLabel resultLabel;
 
     public MainUI() {
         setTitle("Syntax Analyzer SPOK - Bahasa Jawa Ngoko");
-        setSize(650, 520);
+        setUndecorated(true); // borderless
+        setExtendedState(JFrame.MAXIMIZED_BOTH);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
-        setLocationRelativeTo(null);
 
         // ===== FONT =====
         Font titleFont = new Font("Segoe UI", Font.BOLD, 20);
         Font labelFont = new Font("Segoe UI", Font.BOLD, 13);
-        Font textFont  = new Font("Segoe UI", Font.PLAIN, 14);
+        Font textFont  = new Font("Segoe UI Emoji", Font.PLAIN, 14);
 
         // ===== PANEL UTAMA =====
-        JPanel mainPanel = new JPanel();
+        JPanel mainPanel = new JPanel(new BorderLayout(15, 15));
         mainPanel.setBackground(new Color(245, 247, 250));
-        mainPanel.setLayout(new BorderLayout(15, 15));
         mainPanel.setBorder(BorderFactory.createEmptyBorder(15,15,15,15));
 
-        // ===== JUDUL =====
+        // ===== HEADER =====
         JLabel title = new JLabel("SYNTAX ANALYZER SPOK", JLabel.CENTER);
         title.setFont(titleFont);
-        title.setForeground(new Color(33, 37, 41));
 
         JLabel subtitle = new JLabel("Bahasa Jawa Ngoko", JLabel.CENTER);
         subtitle.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        subtitle.setForeground(new Color(90, 90, 90));
+        subtitle.setForeground(Color.GRAY);
 
         JPanel header = new JPanel(new GridLayout(2,1));
         header.setBackground(new Color(245,247,250));
         header.add(title);
         header.add(subtitle);
 
-        // ===== INPUT CARD =====
+        // ===== INPUT =====
         JPanel inputCard = new JPanel(new BorderLayout(8,8));
         inputCard.setBackground(Color.WHITE);
         inputCard.setBorder(BorderFactory.createCompoundBorder(
@@ -58,59 +60,108 @@ public class MainUI extends JFrame {
         inputCard.add(inputLabel, BorderLayout.NORTH);
         inputCard.add(new JScrollPane(inputArea), BorderLayout.CENTER);
 
-        // ===== BUTTON =====
-        JButton analyzeBtn = new JButton("ANALISIS KALIMAT");
+        // ===== BUTTONS =====
+        JButton analyzeBtn = new JButton("ANALISIS");
         analyzeBtn.setFont(labelFont);
         analyzeBtn.setBackground(new Color(13, 110, 253));
         analyzeBtn.setForeground(Color.WHITE);
         analyzeBtn.setFocusPainted(false);
 
-        analyzeBtn.addActionListener(e -> {
-            String hasil = Automata.analyze(inputArea.getText());
-            outputArea.setText(hasil);
+        JButton exitBtn = new JButton("KELUAR");
+        exitBtn.setFont(labelFont);
+        exitBtn.setBackground(new Color(220, 53, 69));
+        exitBtn.setForeground(Color.WHITE);
+        exitBtn.setFocusPainted(false);
 
-            if (hasil.contains("VALID SPOK")) {
-                outputArea.setForeground(new Color(25, 135, 84)); // hijau
+        // ===== RESULT LABEL =====
+        resultLabel = new JLabel(" ", JLabel.CENTER);
+        resultLabel.setFont(new Font("Segoe UI Emoji", Font.BOLD, 16));
+        resultLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        resultLabel.setVerticalAlignment(SwingConstants.CENTER);
+
+        // ===== TABLE =====
+        tableModel = new DefaultTableModel(
+                new Object[]{"Unsur Kalimat", "Status"}, 0
+        );
+
+        table = new JTable(tableModel);
+        table.setFont(textFont);
+        table.setRowHeight(28);
+        table.setEnabled(false);
+
+        JScrollPane tableScroll = new JScrollPane(table);
+
+        // ===== ACTION ANALYZE =====
+        analyzeBtn.addActionListener(e -> {
+            tableModel.setRowCount(0);
+
+            AnalysisResult r = Automata.analyze(inputArea.getText());
+
+            tableModel.addRow(new Object[]{"👤 Subjek (S)", r.adaS ? "✅" : "❌"});
+            tableModel.addRow(new Object[]{"⚙️ Predikat (P)", r.adaP ? "✅" : "❌"});
+            tableModel.addRow(new Object[]{"📦 Objek (O)", r.adaO ? "✅" : "❌"});
+            tableModel.addRow(new Object[]{"📍 Keterangan Tempat", r.adaKT ? "✅" : "❌"});
+            tableModel.addRow(new Object[]{"⏰ Keterangan Waktu", r.adaKW ? "✅" : "❌"});
+
+            if (r.validSPOK) {
+                resultLabel.setText(
+                        "<html><span style='color:#198754;'>✅ <b>KALIMAT VALID SPOK</b></span></html>"
+                );
             } else {
-                outputArea.setForeground(new Color(220, 53, 69)); // merah
+                resultLabel.setText(
+                        "<html><span style='color:#dc3545;'>❌ <b>KALIMAT TIDAK VALID SPOK</b></span></html>"
+                );
             }
         });
 
-        // ===== OUTPUT CARD =====
-        JPanel outputCard = new JPanel(new BorderLayout(8,8));
-        outputCard.setBackground(Color.WHITE);
-        outputCard.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(220,220,220)),
-                BorderFactory.createEmptyBorder(10,10,10,10)
-        ));
+        // ===== ACTION EXIT =====
+        Runnable exitAction = () -> {
+            int confirm = JOptionPane.showConfirmDialog(
+                    this,
+                    "Apakah Anda yakin ingin keluar?",
+                    "Konfirmasi Keluar",
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.WARNING_MESSAGE
+            );
+            if (confirm == JOptionPane.YES_OPTION) {
+                System.exit(0);
+            }
+        };
 
-        JLabel outputLabel = new JLabel("Hasil Analisis");
-        outputLabel.setFont(labelFont);
+        exitBtn.addActionListener(e -> exitAction.run());
 
-        outputArea = new JTextArea(10, 40);
-        outputArea.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 14));
-        outputArea.setEditable(false);
-        outputArea.setLineWrap(true);
-        outputArea.setWrapStyleWord(true);
+        // ===== ESC SHORTCUT =====
+        mainPanel.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
+                .put(KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), "EXIT");
+        mainPanel.getActionMap().put("EXIT", new AbstractAction() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                exitAction.run();
+            }
+        });
 
-        outputCard.add(outputLabel, BorderLayout.NORTH);
-        outputCard.add(new JScrollPane(outputArea), BorderLayout.CENTER);
+        // ===== BUTTON PANEL =====
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
+        buttonPanel.setBackground(new Color(245,247,250));
+        buttonPanel.add(analyzeBtn);
+        buttonPanel.add(exitBtn);
 
-        // ===== TENGAH =====
+        // ===== CENTER PANEL =====
         JPanel centerPanel = new JPanel();
-        centerPanel.setBackground(new Color(245,247,250));
         centerPanel.setLayout(new BoxLayout(centerPanel, BoxLayout.Y_AXIS));
+        centerPanel.setBackground(new Color(245,247,250));
 
         centerPanel.add(inputCard);
         centerPanel.add(Box.createVerticalStrut(10));
-        centerPanel.add(analyzeBtn);
+        centerPanel.add(buttonPanel);
         centerPanel.add(Box.createVerticalStrut(10));
-        centerPanel.add(outputCard);
+        centerPanel.add(resultLabel);
+        centerPanel.add(Box.createVerticalStrut(10));
+        centerPanel.add(tableScroll);
 
-        // ===== ADD KE FRAME =====
+        // ===== ADD =====
         mainPanel.add(header, BorderLayout.NORTH);
         mainPanel.add(centerPanel, BorderLayout.CENTER);
-
         add(mainPanel);
     }
 
