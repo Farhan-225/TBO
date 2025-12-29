@@ -169,4 +169,3 @@ public class MainUI extends JFrame {
         SwingUtilities.invokeLater(() -> new MainUI().setVisible(true));
     }
 }
-

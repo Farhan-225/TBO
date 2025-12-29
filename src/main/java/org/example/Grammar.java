@@ -24,4 +24,3 @@ public class Grammar {
             "saiki", "bengi iki", "sore iki"
     );
 }
-

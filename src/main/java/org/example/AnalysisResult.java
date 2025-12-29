@@ -8,4 +8,3 @@ public class AnalysisResult {
     public boolean adaKW;
     public boolean validSPOK;
 }
-

@@ -51,4 +51,3 @@ public class Automata {
         return result;
     }
 }
-
